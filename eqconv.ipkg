@@ -1,0 +1,5 @@
+package eqconv
+
+modules = Data.Equality.If,
+          Data.Equality.Conversion
+
