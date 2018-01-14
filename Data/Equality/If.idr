@@ -33,6 +33,14 @@ decNot nSmSn = \mn => nSmSn $ cong {f=S} mn
 dneNot : Not (Not (Not a)) -> Not a
 dneNot = flip (.) (flip Prelude.Basics.apply)
 
+trueVoidIsFalse : Not (a = True) -> a = False
+trueVoidIsFalse {a=False} _ = Refl
+trueVoidIsFalse {a=True}  n = absurd $ n Refl
+
+falseVoidIsTrue : Not (a = False) -> a = True
+falseVoidIsTrue {a=False} n = absurd $ n Refl
+falseVoidIsTrue {a=True}  _ = Refl
+
 ------------------------------------------------------------------------------
 -- Stupid little lemmas on LTE
 -----------------------------------------------------------------------------
@@ -254,3 +262,19 @@ lteIfGT lte = ifTrue $ ohRefl $ lteToSoGT lte
 notLTEIfGT :  {l, r : ty}
            -> Not (LTE (S b) a) -> ifThenElse (a > b) (Delay l) (Delay r) = r
 notLTEIfGT nlte = ifFalse $ ohNotRefl $ notLTEToNotSo nlte
+
+||| If the result of an if statement is the then limb, and we know that the
+||| two limbs are unequal, then the condition must be true.
+thenTrue : Not (b = c) -> ifThenElse a (Delay b) (Delay c) = b -> a = True
+thenTrue {a} {b} {c} not_bc if_abc_b with (decEq a True)
+    | Yes atrue = atrue
+    | No antrue with (ifFalse {a} {b} {c} $ trueVoidIsFalse antrue)
+        | if_abc_c = absurd $ not_bc $ trans (sym if_abc_b) if_abc_c
+
+||| If the result of an if statement is the else limb, and we know that the
+||| two limbs are unequal, then the condition must be false
+elseFalse : Not (b = c) -> ifThenElse a (Delay b) (Delay c) = c -> a = False
+elseFalse {a} {b} {c} not_bc if_abc_c with (decEq a False)
+    | Yes afalse = afalse
+    | No anfalse with (ifTrue {a} {b} {c} $ falseVoidIsTrue anfalse)
+        | if_abc_b = absurd $ not_bc $ trans (sym if_abc_b) if_abc_c
